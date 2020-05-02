@@ -35,7 +35,7 @@ getAllocation('Fare')
 getAllocation('SibSp')
 getAllocation('Parch')
 
-let tf = require('@tensorflow/tfjs-node')
+let tf = require('@tensorflow/tfjs')
 const model = tf.sequential();
 model.add(tf.layers.dense(
     {units: 20, activation: 'elu', inputShape: [12]}));
@@ -65,8 +65,8 @@ let convertXFunc = v=>{
        }
     let out =  pclass.concat([v[4]==='male'?1:-1,v[5]/70,v[9]/20])
     out=out.concat(Embarked)
-    out.push(v[6]+1)
-    out.push(v[7]+1)
+    out.push(parseInt(v[6])+1)
+    out.push(parseInt(v[7])+1)
     return out;
     //return [v[2]*0.3,v[4]==='male'?1:-1,v[5]/70,v[9]/20]
 }
