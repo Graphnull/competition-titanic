@@ -3,11 +3,7 @@ let fs = require('fs')
 let train= csvParse(fs.readFileSync('./train.csv'))
 //let test_raw= csvParse(fs.readFileSync('./test.csv'))
 
-train = train.map(v=>{
-    //v[3]=v[3].slice(0,1)
-    v[9]=(parseFloat(v[9])/10)|0
-    return v;
-})
+
 let test = train.slice(train.length-100)
 test.unshift(train[0])
 train=train.slice(0,train.length-100)
@@ -27,24 +23,28 @@ let getAllocation = (field)=>{
     Object.keys(sum).map(field=>{
         out[field]={sum:sum[field],count:count[field],'res':sum[field]/count[field]}
     })
+    console.log(field,out);
 }
 getAllocation('Pclass')
 getAllocation('Age')
 getAllocation('Sex')
 getAllocation('Fare')
 getAllocation('SibSp')
-getAllocation('Parch')
+getAllocation('Ticket')
 
 let tf = require('@tensorflow/tfjs')
 const model = tf.sequential();
 model.add(tf.layers.dense(
-    {units: 20, activation: 'elu', inputShape: [12]}));
-model.add(tf.layers.dense({units: 40, activation: 'elu'}));
-model.add(tf.layers.dense({units: 80, activation: 'elu'}));
-model.add(tf.layers.dense({units: 1, activation: 'relu6'}));
+    {useBias:true,units: 22, activation: 'elu', inputShape: [15]}));
+model.add(tf.layers.dense({useBias:true,units: 30, activation: 'elu'}));
+
+
+model.add(tf.layers.dense({useBias:true,units: 38, activation: 'elu'}));
+model.add(tf.layers.dense({useBias:true,units: 46, activation: 'elu'}));
+model.add(tf.layers.dense({useBias:true,units: 1, activation: 'relu6'}));
 model.summary();
 
-const optimizer = tf.train.sgd(0.0001);
+const optimizer = tf.train.sgd(0.0005);
 model.compile({
   optimizer,
   loss: tf.losses.meanSquaredError,
@@ -63,10 +63,15 @@ let convertXFunc = v=>{
        }else{
         Embarked[3]=1
        }
-    let out =  pclass.concat([v[4]==='male'?1:-1,v[5]/70,v[9]/20])
+    let out =  pclass.concat([v[4]==='male'?10:-10,v[5]/20,(parseFloat(v[9])||0)/60])
     out=out.concat(Embarked)
-    out.push(parseInt(v[6])+1)
-    out.push(parseInt(v[7])+1)
+    out.push((parseInt(v[6])+1)/6)
+    out.push((parseInt(v[7])+1)/6)
+
+    out.push(((v[10][0]||'').charCodeAt()||0)/100)
+    out.push(parseInt(v[10].split(' ')[0].slice(1)||'-20')/20)
+    out.push(parseFloat(v[8].split(' ').slice(-1)[0])/1000000||0)
+
     return out;
     //return [v[2]*0.3,v[4]==='male'?1:-1,v[5]/70,v[9]/20]
 }
@@ -138,6 +143,9 @@ model.fit(dataset.x, dataset.y, {
    validationDataX.forEach((v,i)=>{
      let res =pretreaned.predict(tf.tensor([v])).dataSync()
     //console.log(test.slice(1)[i][0],res[0]/6);
+    if(isNaN(res[0])|| isNaN(Math.round(res[0]/6))){
+      console.log(test.slice(1)[i][0],res[0],test.slice(1)[i], v);
+    }
      result.push([test.slice(1)[i][0],''+Math.round(res[0]/6)])
 
 

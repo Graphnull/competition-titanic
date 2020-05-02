@@ -3,11 +3,6 @@ let fs = require('fs')
 let train= csvParse(fs.readFileSync('./train.csv'))
 //let test_raw= csvParse(fs.readFileSync('./test.csv'))
 
-train = train.map(v=>{
-    //v[3]=v[3].slice(0,1)
-    v[9]=(parseFloat(v[9])/10)|0
-    return v;
-})
 let test = train.slice(train.length-100)
 test.unshift(train[0])
 train=train.slice(0,train.length-100);
@@ -153,16 +148,20 @@ let convertXFunc = v=>{
     }else{
      Embarked[3]=1
     }
- let out =  pclass.concat([v[4]==='male'?1:-1,v[5]/70,v[9]/20])
+ let out =  pclass.concat([v[4]==='male'?10:-10,v[5]/20,(parseFloat(v[9])||0)/60])
  out=out.concat(Embarked)
- out.push(parseInt(v[6]))
- out.push(parseInt(v[7])/3)
+ out.push((parseInt(v[6])+1)/6)
+ out.push((parseInt(v[7])+1)/6)
+
+ out.push(((v[10][0]||'').charCodeAt()||0)/100)
+ out.push(parseInt(v[10].split(' ')[0].slice(1)||'-20')/20)
+ out.push(parseFloat(v[8].split(' ').slice(-1)[0])/1000000||0)
+
  out.push(parseInt(v[1]))
  return out;
  //return [v[2]*0.3,v[4]==='male'?1:-1,v[5]/70,v[9]/20]
 }
-
-let p = new PointsArray(new Float32Array([].concat(...train.slice(1).map(convertXFunc))), 12,1)
+let p = new PointsArray(new Float32Array([].concat(...train.slice(1).map(convertXFunc))), 15,1)
 
 let tree={
     points:p,
@@ -172,7 +171,10 @@ let tree={
 }
 let div=(t)=>{
     //console.log(Object.keys(tree));
-    getHit(tree)
+    let testCurrent =getHit(tree)
+    if(testCurrent===78){
+        return;
+    }
     let arr = t.points.divineByAngle();
     if(arr[0].count>0&&arr[0].count!==t.points.count&&arr[1].count>0&&arr[1].count!==t.points.count){
         
@@ -239,9 +241,10 @@ let getHit = (t)=>{
         }
 
     })
-    if(hit>70){
+    if(hit>75){
     console.log( (hit/count)*100,'%');
     }
+    return hit;
 }
 div(tree);
 console.log('sddd');
